@@ -8,17 +8,15 @@ public class NQueens {
 		try {
 
 			// Create a chessboard object
-			NQueenBoard nQueenBoard = new NQueenBoard(Integer.parseInt(args[1]), args[2]);
-			// If user has provided FOR as his first argument, call Backtracking with
-			// Forward Checking
+			QueenGraph queenGraph = new QueenGraph(Integer.parseInt(args[1]), args[2]);
+			// If user has provided FOR as his first argument, call Backtracking with Forward Checking
 			if (args[0].equalsIgnoreCase("FOR")) {
 				NQueenSolverBTFOR solver = new NQueenSolverBTFOR(args[3]);
-				solver.BackTrackSearchWithForwardChecking(nQueenBoard);
-				// Else If user has provided MAC as his first argument, call Backtracking with
-				// Maintaining Arc Consistency
+				solver.BackTrackSearchWithForwardChecking(queenGraph);
+				// Else If user has provided MAC as his first argument, call Backtracking with Maintaining Arc Consistency
 			} else if (args[0].equalsIgnoreCase("MAC")) {
 				NQueenSolverBTMAC solver = new NQueenSolverBTMAC(args[3]);
-				solver.BackTrackSearchWithMAC(nQueenBoard);
+				solver.BackTrackSearchWithMAC(queenGraph);
 
 			} else
 				System.out.println("Invalid argument provided for Algorithm, please provide either of FOR or MAC\n your input was :" + args[0]);
@@ -35,17 +33,36 @@ public class NQueens {
 }
 
 //The NQueenBoard class, which is a representation of the chess board.
-class NQueenBoard {
+class QueenGraph {
 	// stores the size (N) of the board
 	int size;
+	//variables stores our variables and their assignments, variable.get(i) returns value of variable Q(i+1)
+	ArrayList<Integer> variables = new ArrayList<Integer>();
+	//domain is a list of list of all possible values for each of the the variables
+	//domains.get(i) returns the domains of variable Q(i+1)
+	ArrayList<ArrayList<Integer>> domains = new ArrayList<ArrayList<Integer>>();
 	// CFile name is stored in this string
 	String fileName;
-
-	// The following constructor initializes the Chess board and also writes to the
-	// CFile Output
-	public NQueenBoard(int size, String fileName) throws Exception {
+	
+	
+	// The following constructor initializes the Chess board and also writes to the CFile Output
+	public QueenGraph(int size, String fileName) throws Exception {
 		this.size = size;
-
+		// Set all variable assignments to -1
+		for (int i = 0; i < size; i++) {
+				variables.add(-1);
+		}
+		
+		// Store full domains for all variables in an Arraylist of Arraylist of integers called domains. 
+		//domains.get(i) returns the domains of variable Q(i+1)
+		
+		for (int i = 0; i < size; i++) {
+			ArrayList<Integer> a = new ArrayList<Integer>();
+			for (int j = 0; j < size; j++) {
+						a.add(j);
+			}
+			domains.add(a);
+		}
 		// Open CFile to Write to
 		FileWriter fw = new FileWriter("./" + fileName);
 		BufferedWriter cFile = new BufferedWriter(fw);
@@ -89,8 +106,8 @@ class NQueenBoard {
 
 }
 
-//The QueenGraph Class is used to store Solution States obtained after performing Forward checking or Maintaining Arc Consistency
-class QueenGraph {
+//The NQueenSolutionList Class is used to store Solution States obtained after performing Forward checking or Maintaining Arc Consistency
+class NQueenSolutionList {
 	// Stores the time when code started executing
 	long startTime;
 	// Represents number of backtracking steps taken
@@ -101,14 +118,13 @@ class QueenGraph {
 	String rFileName;
 
 	// Constructor
-	QueenGraph(String fileName) {
+	NQueenSolutionList(String fileName) {
 		rFileName = fileName;
 		countBackTrack = 0;
 		sol = new ArrayList<ArrayList<Integer>>();
 	}
 
-	// This method prints the Time taken, backtracking step count, number of
-	// solutions and up to 2(N) solutions to RFile
+	// This method prints the Time taken, backtracking step count, number of solutions and up to 2(N) solutions to RFile
 	public void printToRFileAndExit() throws Exception {
 		// Store time when FOR or MAC Code exited
 		long timeExit = System.nanoTime();
@@ -140,7 +156,7 @@ class QueenGraph {
 	}
 }
 
-//Arc class is used to Store an arc between two neighbouring variables
+//Arc class is used to Store an arc between two neighboring variables
 class Arc {
 	// Variable 1 of the arc
 	int var1;
@@ -156,108 +172,87 @@ class Arc {
 //This class is used to solve the NQueens problem using Backtracking With forward checking 
 class NQueenSolverBTFOR {
 
-	// Constructor, initializes a QueenGraph object to store solutions and also sets
-	// RFile Name as provided by user argument
+	// Constructor, initializes a NQueenSolutionList object to store solutions and also sets RFile Name as provided by user argument
 	public NQueenSolverBTFOR(String rFileName) {
 		this.rFileName = rFileName;
-		queenGraph = new QueenGraph(rFileName);
+		queenSolutionList = new NQueenSolutionList(rFileName);
 	}
 
 	String rFileName;
-	QueenGraph queenGraph;
-	// The assignment ArrayList stores the assignment values for all variables
-	// assignment.set(i, val) implies variable Q(i+1) has value val. If val is -1,
-	// it implies the variable is unassigned
-	ArrayList<Integer> assignment = new ArrayList<Integer>();
-
-	// This method starts off our backtracking with forward checking, it initializes
-	// all assignments to -1 and sets the intiaial domains for all variables
-	public void BackTrackSearchWithForwardChecking(NQueenBoard nBoard) throws Exception {
+	NQueenSolutionList queenSolutionList;
+	
+	
+	// This method starts off our backtracking with forward checking method
+	public void BackTrackSearchWithForwardChecking(QueenGraph queenGraph) throws Exception {
 
 		// Initialize backtracking steps to 0
-		queenGraph.countBackTrack = 0;
-		// Set all assignments to -1
-		for (int i = 0; i < nBoard.size; i++) {
-			assignment.add(-1);
-		}
-		// Store full domains for all variables in an Arraylist of Arraylist of integers
-		// called reducedDomains
-		// reducedDomains.get(i) returns the domains of variable Q(i+1)
-		ArrayList<ArrayList<Integer>> reducedDomains = new ArrayList<ArrayList<Integer>>();
-		for (int i = 0; i < nBoard.size; i++) {
-			ArrayList<Integer> a = new ArrayList<Integer>();
-			for (int j = 0; j < nBoard.size; j++) {
-				a.add(j);
-			}
-			reducedDomains.add(a);
-		}
+		queenSolutionList.countBackTrack = 0;
+		
 		// Make note of time when Backtracking Algorithm starts
-		queenGraph.startTime = System.nanoTime();
+		queenSolutionList.startTime = System.nanoTime();
 		// Call the backtracking algorithm that used Forward Checking
-		BTFOR(nBoard, reducedDomains);
-		// This method gets called when the number of solutions is less than 2*N and
-		// Backtracking algorithm terminates
-		queenGraph.printToRFileAndExit();
+		BTFOR(queenGraph);
+		// This method gets called when the number of solutions is less than 2*N and Backtracking algorithm terminates
+		queenSolutionList.printToRFileAndExit();
 	}
 
 	// The following method performs backtracking with forward checking
-	// It takes the chessboard and reducedDomains as input
-	public void BTFOR(NQueenBoard nBoard, ArrayList<ArrayList<Integer>> reducedDomains) throws Exception {
-		// Check is assignment is complete, that is if all variables have been assigned
-		// a value
-		if (isCompleteAssign(assignment)) {
-			// If number of solutions found is less than 2*N, add the new solution to the
-			// QueenGraph class
-			if (queenGraph.sol.size() < (2 * nBoard.size)) {
+	// It takes the chessboard state as input
+	public void BTFOR(QueenGraph queenGraph) throws Exception {
+		// Check if varibale assignment is complete, that is if all variables have been assigned a value
+		if (isCompleteAssign(queenGraph.variables)) {
+			// If number of solutions found is less than 2*N, add the new solution to the QueenGraph class
+			if (queenSolutionList.sol.size() < (2 * queenGraph.size)) {
 				ArrayList<Integer> a = new ArrayList<Integer>();
-				for (int i = 0; i < assignment.size(); i++) {
-					a.add(assignment.get(i));
+				for (int i = 0; i < queenGraph.variables.size(); i++) {
+					a.add(queenGraph.variables.get(i));
 				}
-				queenGraph.sol.add(a);
+				queenSolutionList.sol.add(a);
 
 				// If after adding the new solution, total count becomes 2*N, print the RFile
 				// and Exit
-				if (queenGraph.sol.size() == (2 * nBoard.size)) {
-					queenGraph.printToRFileAndExit();
+				if (queenSolutionList.sol.size() == (2 * queenGraph.size)) {
+					queenSolutionList.printToRFileAndExit();
 				}
 			}
 
 			return;
 		}
 
-		// Make an exact same copy of the reduced domains
-		ArrayList<ArrayList<Integer>> reducedDomainCopy = getReducedDomainCopy(reducedDomains);
+		// Make an exact same copy of the domains of queenGraph
+		ArrayList<ArrayList<Integer>> reducedDomainCopy = getReducedDomainCopy(queenGraph.domains);
 		// Select a variable that is not assigned yet and store it in var
-		int var = selectMinUnassigned(assignment);
-		// Explore the ordered domain of the var variable
-		for (int i = 0; i < reducedDomains.get(var).size(); i++) {
-			// Value is the smallest unexplored element of variable var's domain
-			int value = reducedDomains.get(var).get(i);
-			// Perform forward checking on this assignment of var, value and return a
-			// reduced domain
-			reducedDomains = forwardChecking(var, value, assignment, reducedDomains);
+		//var represents Q(var+1) variable
+		int var = selectMinUnassigned(queenGraph.variables);
+		// Explore the ordered domain of the Q(var+1) variable
+		for (int i = 0; i < queenGraph.domains.get(var).size(); i++) {
+			// Value is the smallest unexplored element of variable Q(var+1)'s domain
+			int value = queenGraph.domains.get(var).get(i);
+			// Perform forward checking on this assignment of Q(var+1), value and return a reduced domain based on the forward checking
+			queenGraph.domains = forwardChecking(var, value, queenGraph);
 			// if reduced domain is not null, it implies the domain of no variable was
 			// reduced to empty list
-			if (reducedDomains != null) {
+			if (queenGraph.domains != null) {
 
-				// Call BackTracking with Forward checking recursively to move on to the next
-				// assignment
-				BTFOR(nBoard, reducedDomains);
+				// Call BackTracking with Forward checking recursively to move on to the next variable's assignment
+				BTFOR(queenGraph);
 				/*
 				 * Once our algorithm returns from the above recursive call, it implies that it
 				 * is backtracking to the previous varibale's assignment and therefore we also
 				 * need to backtrack to the previous domains and remove this assignment
 				 */
 				// Therefore we set our reducedDomain to the previously set copy
-				reducedDomains = reducedDomainCopy;
+				queenGraph.domains = reducedDomainCopy;
 				// Remove the assignment
-				assignment.set(var, -1);
-				// if reduced domain is null, it implies the domain of at least one variable was
-				// reduced to empty list
-				// Even in this case, we need to return to the previous domain values
+				queenGraph.variables.set(var, -1);
+				/* If reduced domain is null, it implies the domain of at least one variable was
+				 reduced to empty list
+				 Even in this case, we need to return to the previous domain values
+				 */
 			} else {
-
-				reducedDomains = reducedDomainCopy;
+				/*If any of the varibale domains were reduced to empty sets, copy back the previous domains 
+				in order to check for the next assignment */ 
+				queenGraph.domains = reducedDomainCopy;
 			}
 			/*
 			 * We increment backtrack count as we would reach this code only when we either
@@ -265,7 +260,7 @@ class NQueenSolverBTFOR {
 			 * current variable , where too, we backtrack to the previous variable
 			 * assignment
 			 */
-			queenGraph.countBackTrack++;
+			queenSolutionList.countBackTrack++;
 		}
 	}
 
@@ -279,49 +274,43 @@ class NQueenSolverBTFOR {
 		return assignements.size();
 	}
 
-	// This method performs forward checking on our current assignment and reduces
-	// the domains of the appropriate variables accordingly
-	public ArrayList<ArrayList<Integer>> forwardChecking(int var, int value, ArrayList<Integer> assignments,
-			ArrayList<ArrayList<Integer>> reducedDomains) {
+	// This method performs forward checking on our current variable assignment and reduces the domains of the appropriate variables accordingly
+	public ArrayList<ArrayList<Integer>> forwardChecking(int var, int value, QueenGraph queenGraph) {
 
 		ArrayList<ArrayList<Integer>> reducedDomainsCopy = new ArrayList<ArrayList<Integer>>();
 		ArrayList<Integer> a;
 
-		// The code snippet below reduces our domain based on the assignment(var, value)
-		for (int i = 0; i < reducedDomains.size(); i++) {
+		// The code snippet below reduces our domain based on the assignmentQ(var+1)=value and stores it in a varibale called reducedDomainCopy
+		for (int i = 0; i < queenGraph.domains.size(); i++) {
 			a = new ArrayList<Integer>();
-			// if a variable is unassigned and not a [art of our current assignment
-			if (assignments.get(i) == -1 && i != var) {
-				for (int j = 0; j < reducedDomains.get(i).size(); j++) {
-					// If a value in another variable's domain conflicts with our current
-					// assignment, remove that value from reduced domain
-					if (!(reducedDomains.get(i).get(j) == value)
-							&& !(Math.abs(i - var) == Math.abs(value - reducedDomains.get(i).get(j)))) {
-						a.add(reducedDomains.get(i).get(j));
+			// if a variable is unassigned and not a part of our current assignment
+			if (queenGraph.variables.get(i) == -1 && i != var) {
+				for (int j = 0; j < queenGraph.domains.get(i).size(); j++) {
+					// If a value in another variable's domain conflicts with our current assignment, remove that value from reduced domain
+					if (!(queenGraph.domains.get(i).get(j) == value)
+							&& !(Math.abs(i - var) == Math.abs(value - queenGraph.domains.get(i).get(j)))) {
+						a.add(queenGraph.domains.get(i).get(j));
 					}
 				}
 
-				// If a variable is assigned or a part of our current assignment, copy it's
-				// domain as it is
+				// If a variable is assigned or a part of our current assignment, copy it's domain as it is
 			} else {
-				for (int j = 0; j < reducedDomains.get(i).size(); j++) {
-					a.add(reducedDomains.get(i).get(j));
+				for (int j = 0; j < queenGraph.domains.get(i).size(); j++) {
+					a.add(queenGraph.domains.get(i).get(j));
 
 				}
 			}
 			reducedDomainsCopy.add(a);
 		}
 
-		// Check if if any domain i our reducedDomainCopy was empty, if yes ,return
-		// null.
+		// Check if if any domain i our reducedDomainCopy was empty, if yes ,return null.
 		for (int i = 0; i < reducedDomainsCopy.size(); i++) {
 			if (reducedDomainsCopy.get(i).size() == 0) {
 				return null;
 			}
 		}
-		// If none of the reducedDomains were reduced to empty sets, add the current
-		// (var,value) to our assignment list
-		assignments.set(var, value);
+		// If none of the reducedDomains were reduced to empty sets, add the current Assign value to variable Q(var+1)
+		queenGraph.variables.set(var, value);
 		// return the new reducedDomainCopy as our new reducedDomain
 		return reducedDomainsCopy;
 	}
@@ -358,108 +347,82 @@ class NQueenSolverBTFOR {
 //This class is used to solve the NQueens problem using Backtracking With Maintaining Arc Consistency
 class NQueenSolverBTMAC {
 
-	// Constructor, initializes a QueenGraph object to store solutions and also sets
-	// RFile Name as provided by user argument
+	// Constructor, initializes a QueenGraph object to store solutions and also sets RFile Name as provided by user argument
 	public NQueenSolverBTMAC(String rfileName) {
 		// TODO Auto-generated constructor stub
 		this.rfileName = rfileName;
-		queenGraph = new QueenGraph(rfileName);
+		nQueenSolutionList= new NQueenSolutionList(rfileName);
 	}
 
 	String rfileName;
 	// Arcs is a queue which stores objects of type Arc
 	ArrayList<Arc> arcs = new ArrayList<Arc>();
-	QueenGraph queenGraph;
+	NQueenSolutionList nQueenSolutionList;
 
-	// The assignment ArrayList stores the assignment values for all variables
-	// assignment.set(i, val) implies variable Q(i+1) has value val. If val is -1,
-	// it implies the variable is unassigned.
-	ArrayList<Integer> assignment = new ArrayList<Integer>();
-
-	// This method starts off our backtracking with MAC, it initializes all
-	// assignments to -1 and sets the initial domains for all variables
-	public void BackTrackSearchWithMAC(NQueenBoard nBoard) throws Exception {
+	// This method starts off our backtracking with MAC, it initializes all assignments to -1 and sets the initial domains for all variables
+	public void BackTrackSearchWithMAC(QueenGraph queenGraph) throws Exception {
 		// Initialize backtracking steps to 0
-		queenGraph.countBackTrack = 0;
-		// Set all assignments to -1
-		for (int i = 0; i < nBoard.size; i++) {
-			assignment.add(-1);
-		}
-		// Store full domains for all variables in an ArrayList of ArrayList of integers
-		// called reducedDomains
-		// reducedDomains.get(i) returns the domains of variable Q(i+1)
-		ArrayList<ArrayList<Integer>> reducedDomains = new ArrayList<ArrayList<Integer>>();
-		for (int i = 0; i < nBoard.size; i++) {
-			ArrayList<Integer> a = new ArrayList<Integer>();
-			for (int j = 0; j < nBoard.size; j++) {
-				a.add(j);
-			}
-			reducedDomains.add(a);
-		}
+		nQueenSolutionList.countBackTrack = 0;
+		
 		// Make note of time when Backtracking Algorithm starts
-		queenGraph.startTime = System.nanoTime();
+		nQueenSolutionList.startTime = System.nanoTime();
 		// Call the backtracking algorithm that used Forward Checking
-		BTMAC(nBoard, reducedDomains);
-		// This method gets called when the number of solutions is less than 2*N and
-		// Backtracking algorithm terminates
-		queenGraph.printToRFileAndExit();
+		BTMAC(queenGraph);
+		// This method gets called when the number of solutions is less than 2*N and Backtracking algorithm terminates
+		nQueenSolutionList.printToRFileAndExit();
 	}
 
 	// The following method performs backtracking with forward checking
-	// It takes the chess board and reducedDomains as input
-	public void BTMAC(NQueenBoard nBoard, ArrayList<ArrayList<Integer>> reducedDomains) throws Exception {
-		// Check is assignment is complete, that is if all variables have been assigned
-		// a value
-		if (isCompleteAssign(assignment)) {
+	// It takes the chessboard state as input
+	public void BTMAC(QueenGraph queenGraph) throws Exception {
+		// Check is assignment is complete, that is if all variables have been assigned a value
+		if (isCompleteAssign(queenGraph.variables)) {
 			// If number of solutions found is less than 2*N, add the new solution to the
 			// QueenGraph class
-			if (queenGraph.sol.size() < (2 * nBoard.size)) {
+			if (nQueenSolutionList.sol.size() < (2 * queenGraph.size)) {
 				ArrayList<Integer> a = new ArrayList<Integer>();
-				for (int i = 0; i < assignment.size(); i++) {
-					a.add(assignment.get(i));
+				for (int i = 0; i < queenGraph.variables.size(); i++) {
+					a.add(queenGraph.variables.get(i));
 				}
-				queenGraph.sol.add(a);
+				nQueenSolutionList.sol.add(a);
 				// If after adding the new solution, total count becomes 2*N, print the RFile
 				// and Exit
-				if (queenGraph.sol.size() == (2 * nBoard.size)) {
-					queenGraph.printToRFileAndExit();
+				if (nQueenSolutionList.sol.size() == (2 * queenGraph.size)) {
+					nQueenSolutionList.printToRFileAndExit();
 				}
 			}
 
 			return;
 		}
-		// Make an exact same copy of the reduced domains
-		ArrayList<ArrayList<Integer>> reducedDomainCopy = getReducedDomainCopy(reducedDomains);
+		// Make an exact same copy of the domains into reducedDomainCopy Variable
+		ArrayList<ArrayList<Integer>> reducedDomainCopy = getReducedDomainCopy(queenGraph.domains);
 		// Select a variable that is not assigned yet and store it in var
-		int var = selectMinUnassigned(assignment);
+		//var represents variable Q(var+1)
+		int var = selectMinUnassigned(queenGraph.variables);
 		// Explore the ordered domain of the var variable
-		for (int i = 0; i < reducedDomains.get(var).size(); i++) {
-			// Value is the smallest unexplored element of variable var's domain
-			int value = reducedDomains.get(var).get(i);
-			// Perform Maintaining Arc consistency on this assignment of var, value and
-			// return a reduced domain
-			reducedDomains = maintainArcConsistency(var, value, assignment, reducedDomains);
-			// if reduced domain is not null, it implies the domain of no variable was
-			// reduced to empty list
-			if (reducedDomains != null) {
-				// Call BackTracking with Maintaining Arc Consistency recursively to move on to
-				// the next assignment
-				BTMAC(nBoard, reducedDomains);
+		for (int i = 0; i < queenGraph.domains.get(var).size(); i++) {
+			// Value is the smallest unexplored element of variable Q(var+1)'s domain
+			int value = queenGraph.domains.get(var).get(i);
+			// Perform Maintaining Arc consistency on this assignment of var, value and return a reduced domain
+			queenGraph.domains = maintainArcConsistency(var, value, queenGraph);
+			// if reduced domain is not null, it implies the domain of no variable was reduced to empty list
+			if (queenGraph.domains != null) {
+				// Call BackTracking with Maintaining Arc Consistency recursively to move on to the next varible's assignment
+				BTMAC(queenGraph);
 				/*
 				 * Once our algorithm returns from the above recursive call, it implies that it
 				 * is backtracking to the previous variable's assignment and therefore we also
 				 * need to backtrack to the previous domains and remove this assignment
 				 */
 				// Therefore we set our reducedDomain to the previously set copy
-				reducedDomains = reducedDomainCopy;
+				queenGraph.domains = reducedDomainCopy;
 				// Remove the assignment
-				assignment.set(var, -1);
-				// if reduced domain is null, it implies the domain of at least one variable was
-				// reduced to empty list
+				queenGraph.variables.set(var, -1);
+				// if reduced domain is null, it implies the domain of at least one variable was reduced to empty list
 				// Even in this case, we need to return to the previous domain values
 			} else {
-
-				reducedDomains = reducedDomainCopy;
+				
+				queenGraph.domains = reducedDomainCopy;
 			}
 			/*
 			 * We increment backtrack count as we would reach this code only when we either
@@ -467,7 +430,7 @@ class NQueenSolverBTMAC {
 			 * current variable , where too, we backtrack to the previous variable
 			 * assignment
 			 */
-			queenGraph.countBackTrack++;
+			nQueenSolutionList.countBackTrack++;
 		}
 	}
 
@@ -481,14 +444,12 @@ class NQueenSolverBTMAC {
 		return assignements.size();
 	}
 
-	// This method performs Maintaining Arc Consistency on our current assignment
-	// and reduces the domains of the appropriate variables accordingly
-	public ArrayList<ArrayList<Integer>> maintainArcConsistency(int var, int value, ArrayList<Integer> assignments,
-			ArrayList<ArrayList<Integer>> reducedDomains) {
+	// This method performs Maintaining Arc Consistency on our current variable assignment and reduces the domains of the appropriate variables accordingly
+	public ArrayList<ArrayList<Integer>> maintainArcConsistency(int var, int value, QueenGraph queenGraph) {
 		// Copy current assignment values into a variable assignmentCopy
 		ArrayList<Integer> assignmentsCopy = new ArrayList<Integer>();
-		for (int i = 0; i < assignments.size(); i++) {
-			assignmentsCopy.add(assignments.get(i));
+		for (int i = 0; i < queenGraph.variables.size(); i++) {
+			assignmentsCopy.add(queenGraph.variables.get(i));
 		}
 		// Add var, value to assignment
 		assignmentsCopy.set(var, value);
@@ -496,7 +457,7 @@ class NQueenSolverBTMAC {
 		// Copy current reducedDomain values into reducedDomainCopy except for the ones
 		// already assigned
 		ArrayList<ArrayList<Integer>> reducedDomainsCopy = new ArrayList<ArrayList<Integer>>();
-		for (int i = 0; i < reducedDomains.size(); i++) {
+		for (int i = 0; i < queenGraph.domains.size(); i++) {
 			ArrayList<Integer> a = new ArrayList<Integer>();
 			// If a variable is assigned a value, add that value into reducedDomainsCopy for
 			// that variable
@@ -504,8 +465,8 @@ class NQueenSolverBTMAC {
 				a.add(assignmentsCopy.get(i));
 				// For unassigned variables, copy all values into reducedDomainsCopy
 			} else {
-				for (int j = 0; j < reducedDomains.get(i).size(); j++) {
-					a.add(reducedDomains.get(i).get(j));
+				for (int j = 0; j < queenGraph.domains.get(i).size(); j++) {
+					a.add(queenGraph.domains.get(i).get(j));
 				}
 			}
 			reducedDomainsCopy.add(a);
@@ -526,16 +487,13 @@ class NQueenSolverBTMAC {
 			// Check if Domain of variable x1 was revised for an arc(x1,x2)
 			if (revisedDomain(current, reducedDomainsCopy)) {
 				// If the domain of x1 in arc(x1,x2) was reduced to empty list, return null
-				// which denotes false
 				if (reducedDomainsCopy.get(current.var1).size() == 0) {
 					// Clear up the queue and return null
 					arcs.clear();
 					return null;
-					// If the domain of x1 in arc(x1,x2) was not reduced to empty list, then add
-					// arcs with neighboring elements of x1
+					// If the domain of x1 in arc(x1,x2) was not reduced to empty list, then add arcs with neighboring elements of x1
 				} else {
-					// if x3 is a neighbor of x1 in arc(x1,x2), add arc(x3,x1) to the queue such
-					// that x3 is not the same variable as x2
+					// if x3 is a neighbor of x1 in arc(x1,x2), add arc(x3,x1) to the queue such that x3 is not the same variable as x2
 					for (int i = 0; i < assignmentsCopy.size(); i++) {
 						if (i != current.var2 && i != current.var1) {
 							arcs.add(new Arc(i, current.var1));
@@ -546,15 +504,13 @@ class NQueenSolverBTMAC {
 			}
 		}
 
-		// Add var, value to assignment as they are consistent with the other
-		// assignments
-		assignment = assignmentsCopy;
+		// Add var, value to assignment as they are consistent with the other assignments
+		queenGraph.variables = assignmentsCopy;
 		// return the new reducedDomain
 		return reducedDomainsCopy;
 	}
 
-	// This method check if for an arc(a,b), whether the domain of "a" was revised
-	// or not
+	// This method check if for an arc(a,b), whether the domain of "a" was revised or not
 	public boolean revisedDomain(Arc arc, ArrayList<ArrayList<Integer>> reducedDomainCopy) {
 		boolean revised = false;
 		int count = 0;
